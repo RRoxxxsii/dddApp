@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "training"
+version = "0.1.0"
+description = ""
+authors = ["MikhailBR <mishabur38@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = {extras = ["all"], version = "^0.121.0"}
+sqlalchemy = "^2.0.44"
+aiokafka = "^0.12.0"
+pydantic = "^2.12.3"
+passlib = "^1.7.4"
+asyncpg = "^0.30.0"
+alembic = "^1.17.1"
+pre-commit = "^4.3.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
