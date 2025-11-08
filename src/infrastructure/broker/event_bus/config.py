@@ -5,7 +5,7 @@ from src.infrastructure.broker.producer import AIOKafkaProducer
 
 def build_event_bus(broker: AIOKafkaProducer) -> EventBus:
     event_bus = EventBus(
-        broker=broker, mapper={UserRegisteredEvent: ("users", "prefix")}
+        broker=broker, mapper={UserRegisteredEvent: ("user.created", "users")}
     )
 
     return event_bus

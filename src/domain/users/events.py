@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from src.domain.analytics.entity import ActionType
 from src.domain.events import DomainEvent
 
 
@@ -11,6 +12,7 @@ class UserRegisteredEvent(DomainEvent):
     email: str
     first_name: str
     last_name: str
+    event_type: ActionType
     occurred_at: datetime = None
 
     def __post_init__(self):

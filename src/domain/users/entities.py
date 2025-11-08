@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from src.domain.analytics.entity import ActionTypeEnum
 from src.domain.entities import BaseEntity
 from src.domain.users.events import UserRegisteredEvent
 from src.domain.users.valueobjects import Email, Password, UserId
@@ -38,6 +39,7 @@ class User(BaseEntity):
             email=user.email.value,
             first_name=user.first_name,
             last_name=user.last_name,
+            event_type=ActionTypeEnum.USER_CREATED.value,
         )
         user._add_domain_event(event)
 

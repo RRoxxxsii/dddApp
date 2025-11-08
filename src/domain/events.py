@@ -6,13 +6,10 @@ from datetime import datetime
 @dataclass
 class DomainEvent:
     entity_id: str | int | uuid.UUID | None
+    event_type: str
     event_id = uuid.uuid4()
     occurred_at = datetime.now()
     event_version = "1.0"
-
-    @property
-    def event_type(self) -> str:
-        return self.__class__.__name__
 
     def dict(self) -> dict:
         result = dict()

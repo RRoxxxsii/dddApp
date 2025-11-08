@@ -1,18 +1,45 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 
 from src.config import get_settings
+from src.infrastructure.broker.consumer import (
+    KafkaConfig,
+    KafkaMessageConsumer,
+)
+from src.infrastructure.broker.dto_factory import UserCreatedDTOFactory
 from src.infrastructure.broker.event_bus.config import build_event_bus
+from src.infrastructure.broker.handlers import UserCreatedHandler
 from src.infrastructure.broker.producer import AIOKafkaProducer
 from src.infrastructure.sqlalchemy.main import (
     create_async_engine,
     create_async_pool,
 )
+from src.presentation.api.analytics.router import router as analytics_router
 from src.presentation.api.exception_handlers import setup_exception_handlers
 from src.presentation.api.users.router import router as users_router
 from src.presentation.di import get_event_bus, get_uow
 from src.presentation.providers import DBProvider
+
+
+def setup_kafka_analytics_consumer(db_provider: DBProvider):
+    kafka_config = KafkaConfig(
+        bootstrap_servers="kafka:9092",
+        group_id="analytics-service",
+        auto_offset_reset="earliest",
+    )
+
+    dto_factory = UserCreatedDTOFactory()
+    user_created_handler = UserCreatedHandler(
+        db_provider.provide_client, dto_factory
+    )
+
+    consumer = KafkaMessageConsumer(kafka_config)
+
+    topic_handlers = {"user.created": user_created_handler}
+
+    return consumer, topic_handlers
 
 
 @asynccontextmanager
@@ -26,6 +53,10 @@ async def lifespan(app: FastAPI):
 
     db_provider = DBProvider(pool)
 
+    consumer, topic_handlers = setup_kafka_analytics_consumer(db_provider)
+
+    consumer_task = asyncio.create_task(consumer.consume(topic_handlers))
+
     await producer.start()
 
     app.dependency_overrides[get_event_bus] = lambda: event_bus  # noqa
@@ -33,13 +64,23 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    consumer_task.cancel()
+    try:
+        await consumer_task
+    except asyncio.CancelledError:
+        pass
+
     await producer.stop()
     await engine.dispose()
+    await consumer.stop()
 
 
 def build_routers(app: FastAPI):
     v1_router = APIRouter(prefix="/v1")
     v1_router.include_router(users_router, prefix="/api/users", tags=["Users"])
+    v1_router.include_router(
+        analytics_router, prefix="/api/analytics", tags=["Analytics"]
+    )
 
     app.include_router(v1_router, prefix="")
 
