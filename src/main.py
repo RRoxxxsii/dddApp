@@ -10,8 +10,9 @@ from src.infrastructure.broker.consumer import (
 )
 from src.infrastructure.broker.dto_factory import UserCreatedDTOFactory
 from src.infrastructure.broker.event_bus.config import build_event_bus
-from src.infrastructure.broker.handlers import UserCreatedHandler
+from src.infrastructure.broker.handlers import UserCreatedMultiHandler, UseCaseFactory
 from src.infrastructure.broker.producer import AIOKafkaProducer
+from src.infrastructure.mailing.client import ConsoleMailingClient
 from src.infrastructure.sqlalchemy.main import (
     create_async_engine,
     create_async_pool,
@@ -31,13 +32,22 @@ def setup_kafka_analytics_consumer(db_provider: DBProvider):
     )
 
     dto_factory = UserCreatedDTOFactory()
-    user_created_handler = UserCreatedHandler(
-        db_provider.provide_client, dto_factory
+
+    use_case_factory = UseCaseFactory(notification_client=ConsoleMailingClient())
+    user_created_multi_handler = UserCreatedMultiHandler(
+        use_case_factories=[
+            use_case_factory.create_user_analytics,
+            use_case_factory.create_send_greeting_email,
+        ],
+        uow_provider=db_provider.provide_client,
+        dto_factory=dto_factory
     )
 
     consumer = KafkaMessageConsumer(kafka_config)
 
-    topic_handlers = {"user.created": user_created_handler}
+    topic_handlers = {
+        "user.created": user_created_multi_handler
+    }
 
     return consumer, topic_handlers
 

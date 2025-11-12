@@ -1,11 +1,11 @@
-from src.application.analytics.dto import UserCreatedAnalyticDTO
+from src.application.analytics.dto import UserCreatedDTO
 from src.domain.usecase import BaseUseCase
 from src.infrastructure.sqlalchemy.uow import UnitOfWork
 
 
 class CreateUserActionAnalyticUseCase(BaseUseCase):
 
-    async def __call__(self, dto: UserCreatedAnalyticDTO) -> None:
+    async def __call__(self, dto: UserCreatedDTO) -> None:
         await self._uow.user_analytics_repository.create(dto)
         await self._uow.commit()
 
@@ -20,7 +20,7 @@ class UserActionAnalyticInteractor:
     def __init__(self, uow: UnitOfWork):
         self._uow = uow
 
-    async def create_user_action_analytic(self, dto: UserCreatedAnalyticDTO) -> None:
+    async def create_user_action_analytic(self, dto: UserCreatedDTO) -> None:
         return await CreateUserActionAnalyticUseCase(self._uow)(dto)
 
     async def get_user_action_count(self) -> int:

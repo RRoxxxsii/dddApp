@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import UUID
 
-from src.application.analytics.dto import UserCreatedAnalyticDTO
+from src.application.analytics.dto import UserCreatedDTO
 
 
 class ABCDTOFactory(ABC):
@@ -14,8 +14,8 @@ class ABCDTOFactory(ABC):
 
 class UserCreatedDTOFactory(ABCDTOFactory):
     @staticmethod
-    def execute(raw_data: dict) -> UserCreatedAnalyticDTO:
-        return UserCreatedAnalyticDTO(
+    def execute(raw_data: dict) -> UserCreatedDTO:
+        return UserCreatedDTO(
             event_id=UUID(raw_data["event_id"]),
             entity_id=raw_data["entity_id"],
             email=raw_data["email"],

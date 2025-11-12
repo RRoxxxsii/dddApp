@@ -1,10 +1,10 @@
-from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
+from pydantic import BaseModel
 
-@dataclass
-class UserCreatedAnalyticDTO:
+
+class UserCreatedDTO(BaseModel):
     event_id: UUID
     entity_id: int
     email: str

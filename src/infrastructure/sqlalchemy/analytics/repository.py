@@ -1,7 +1,7 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.analytics.dto import UserCreatedAnalyticDTO
+from src.application.analytics.dto import UserCreatedDTO
 from src.infrastructure.sqlalchemy.analytics.model import UserActionAnalyticORM
 
 
@@ -10,7 +10,7 @@ class UserActionAnalyticRepository:
         self._session = session
 
     async def create(
-            self, dto: UserCreatedAnalyticDTO
+            self, dto: UserCreatedDTO
     ):
         analytic_orm = UserActionAnalyticORM(
             user_id=dto.entity_id,
