@@ -4,15 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 
 from src.config import get_settings
-from src.infrastructure.broker.consumer import (
-    KafkaConfig,
-    KafkaMessageConsumer,
-)
-from src.infrastructure.broker.dto_factory import UserCreatedDTOFactory
 from src.infrastructure.broker.event_bus.config import build_event_bus
-from src.infrastructure.broker.handlers import UserCreatedMultiHandler, UseCaseFactory
+from src.infrastructure.broker.main import setup_kafka_analytics_consumer
 from src.infrastructure.broker.producer import AIOKafkaProducer
-from src.infrastructure.mailing.client import ConsoleMailingClient
 from src.infrastructure.sqlalchemy.main import (
     create_async_engine,
     create_async_pool,
@@ -24,38 +18,10 @@ from src.presentation.di import get_event_bus, get_uow
 from src.presentation.providers import DBProvider
 
 
-def setup_kafka_analytics_consumer(db_provider: DBProvider):
-    kafka_config = KafkaConfig(
-        bootstrap_servers="kafka:9092",
-        group_id="analytics-service",
-        auto_offset_reset="earliest",
-    )
-
-    dto_factory = UserCreatedDTOFactory()
-
-    use_case_factory = UseCaseFactory(notification_client=ConsoleMailingClient())
-    user_created_multi_handler = UserCreatedMultiHandler(
-        use_case_factories=[
-            use_case_factory.create_user_analytics,
-            use_case_factory.create_send_greeting_email,
-        ],
-        uow_provider=db_provider.provide_client,
-        dto_factory=dto_factory
-    )
-
-    consumer = KafkaMessageConsumer(kafka_config)
-
-    topic_handlers = {
-        "user.created": user_created_multi_handler
-    }
-
-    return consumer, topic_handlers
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    producer = AIOKafkaProducer(bootstrap_servers="kafka:9092")
+    producer = AIOKafkaProducer(bootstrap_servers=settings.bootstrap_servers)
     event_bus = build_event_bus(producer)
 
     engine = create_async_engine(config=settings)

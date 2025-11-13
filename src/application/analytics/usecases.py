@@ -4,16 +4,16 @@ from src.infrastructure.sqlalchemy.uow import UnitOfWork
 
 
 class CreateUserActionAnalyticUseCase(BaseUseCase):
-
     async def __call__(self, dto: UserCreatedDTO) -> None:
         await self._uow.user_analytics_repository.create(dto)
         await self._uow.commit()
 
 
 class GetUserActionCountUseCase(BaseUseCase):
-
     async def __call__(self) -> int:
-        return await self._uow.user_analytics_repository.get_total_action_count()
+        return (
+            await self._uow.user_analytics_repository.get_total_action_count()
+        )
 
 
 class UserActionAnalyticInteractor:

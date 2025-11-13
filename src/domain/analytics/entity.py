@@ -10,8 +10,5 @@ class ActionTypeEnum(str, Enum):
 
 
 ActionType = Literal[
-    "user_created",
-    "user_modified",
-    "user_deleted",
-    "user_logged_in"
+    "user_created", "user_modified", "user_deleted", "user_logged_in"
 ]

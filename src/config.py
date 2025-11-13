@@ -10,6 +10,8 @@ class Config(BaseSettings):
     postgres_port: int
     postgres_db: str
 
+    bootstrap_servers: str
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

@@ -1,7 +1,7 @@
 import asyncio
 import json
 import traceback
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from aiokafka import AIOKafkaConsumer
@@ -10,7 +10,6 @@ from src.infrastructure.broker.handlers import ABCHandler
 
 
 class MessageConsumer(ABC):
-
     @abstractmethod
     async def consume(self, topic_handlers: dict[str, ABCHandler]) -> None:
         pass
@@ -24,7 +23,7 @@ class MessageConsumer(ABC):
 class KafkaConfig:
     bootstrap_servers: str
     group_id: str
-    auto_offset_reset: str = 'earliest'
+    auto_offset_reset: str = "earliest"
     enable_auto_commit: bool = False
     session_timeout_ms: int = 6000
     max_poll_interval_ms: int = 300000
@@ -37,7 +36,6 @@ class KafkaMessageConsumer(MessageConsumer):
         self._running = False
 
     async def consume(self, topic_handlers: dict[str, ABCHandler]) -> None:
-
         self.consumer = AIOKafkaConsumer(
             *topic_handlers.keys(),
             bootstrap_servers=self.config.bootstrap_servers,
@@ -55,17 +53,17 @@ class KafkaMessageConsumer(MessageConsumer):
             async for message in self.consumer:
                 try:
                     handler: ABCHandler = topic_handlers[message.topic]
-                    data = json.loads(message.value.decode('utf-8'))
+                    data = json.loads(message.value.decode("utf-8"))
                     if asyncio.iscoroutinefunction(handler.handle):
                         await handler.handle(data)
                     else:
                         handler.handle(data)  # type: ignore
 
-                except json.JSONDecodeError as e:
+                except json.JSONDecodeError as e:  # noqa
                     traceback.print_exc()
-                except KeyError as e:
+                except KeyError as e:  # noqa
                     traceback.print_exc()
-                except Exception as e:
+                except Exception as e:  # noqa
                     traceback.print_exc()
 
         finally:

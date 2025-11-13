@@ -6,7 +6,7 @@ class EmailTemplate:
     subject: str
     body: str
 
-    def render(self, **context) -> 'EmailTemplate':
+    def render(self, **context) -> "EmailTemplate":
         subject = self._render_template(self.subject, context)
         body = self._render_template(self.body, context)
         return EmailTemplate(subject=subject, body=body)

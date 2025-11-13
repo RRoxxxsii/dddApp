@@ -23,5 +23,5 @@ class UserCreatedDTOFactory(ABCDTOFactory):
             last_name=raw_data["last_name"],
             occurred_at=datetime.fromisoformat(raw_data["occurred_at"]),
             event_version=raw_data["event_version"],
-            event_type=raw_data["event_type"]
+            event_type=raw_data["event_type"],
         )

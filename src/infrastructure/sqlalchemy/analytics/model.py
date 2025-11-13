@@ -10,10 +10,6 @@ class UserActionAnalyticORM(Base):
     __tablename__ = "user_action_analytics"
 
     id: Mapped[bigint_pk]
-    user_id: Mapped[int] = mapped_column(
-        BigInteger, nullable=False
-    )
-    action: Mapped[ActionTypeEnum] = mapped_column(
-        String, nullable=False
-    )
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    action: Mapped[ActionTypeEnum] = mapped_column(String, nullable=False)
     created_at: Mapped[time_created]

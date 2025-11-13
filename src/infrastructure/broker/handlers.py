@@ -1,6 +1,6 @@
 import traceback
 from abc import ABC, abstractmethod
-from typing import Callable, AsyncGenerator
+from collections.abc import Callable
 
 from src.application.analytics.usecases import CreateUserActionAnalyticUseCase
 from src.application.notifications.usecases import SendGreetingEmailUseCase
@@ -12,10 +12,10 @@ from src.infrastructure.sqlalchemy.uow import UnitOfWork
 
 class ABCHandler(ABC):
     def __init__(
-            self,
-            dto_factory: ABCDTOFactory,
-            use_case_factories: list[Callable[[UnitOfWork], BaseUseCase]],
-            uow_provider: Callable
+        self,
+        dto_factory: ABCDTOFactory,
+        use_case_factories: list[Callable[[UnitOfWork], BaseUseCase]],
+        uow_provider: Callable,
     ):
         self.use_case_factories = use_case_factories
         self.uow_provider = uow_provider
@@ -28,15 +28,19 @@ class ABCHandler(ABC):
 
 class UseCaseFactory:
     def __init__(
-            self,
-            notification_client: ABCNotificationClient,
+        self,
+        notification_client: ABCNotificationClient,
     ):
         self._notification_client = notification_client
 
-    def create_send_greeting_email(self, uow: UnitOfWork) -> SendGreetingEmailUseCase:
+    def create_send_greeting_email(
+        self, uow: UnitOfWork
+    ) -> SendGreetingEmailUseCase:
         return SendGreetingEmailUseCase(uow, self._notification_client)
 
-    def create_user_analytics(self, uow: UnitOfWork) -> CreateUserActionAnalyticUseCase:
+    def create_user_analytics(
+        self, uow: UnitOfWork
+    ) -> CreateUserActionAnalyticUseCase:
         return CreateUserActionAnalyticUseCase(uow)
 
 
@@ -63,10 +67,10 @@ class UserCreatedMultiHandler(ABCHandler):
                     dto = self.dto_factory.execute(raw_message)
                     try:
                         await use_case(dto)
-                    except Exception as e:
+                    except Exception as e:  # noqa
                         traceback.print_exc()
 
                 await uow.commit()
                 break
-        except Exception as e:
+        except Exception as e:  # noqa
             traceback.print_exc()

@@ -7,9 +7,9 @@ from src.infrastructure.sqlalchemy.uow import UnitOfWork
 
 class SendGreetingEmailUseCase(BaseUseCase):
     def __init__(
-            self,
-            uow: UnitOfWork,
-            notification_client: ABCNotificationClient,
+        self,
+        uow: UnitOfWork,
+        notification_client: ABCNotificationClient,
     ):
         super().__init__(uow)
         self._notification_client = notification_client
@@ -17,7 +17,7 @@ class SendGreetingEmailUseCase(BaseUseCase):
     async def __call__(self, dto: UserCreatedDTO) -> None:
         template = EmailTemplate(
             subject="Hello, $first_name!",
-            body="Welcome $first_name $last_name to our service."
+            body="Welcome $first_name $last_name to our service.",
         )
 
         template_rendered = template.render(**dto.model_dump())
@@ -25,7 +25,7 @@ class SendGreetingEmailUseCase(BaseUseCase):
         await self._notification_client.send_message(
             subject=template_rendered.subject,
             body=template_rendered.body,
-            email=dto.email
+            email=dto.email,
         )
 
 
@@ -35,5 +35,3 @@ class NotificationInteractor:
 
     def send_greeting_email(self):
         pass
-
-
