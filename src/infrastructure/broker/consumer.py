@@ -59,6 +59,8 @@ class KafkaMessageConsumer(MessageConsumer):
                     else:
                         handler.handle(data)  # type: ignore
 
+                    await self.consumer.commit()
+
                 except json.JSONDecodeError as e:  # noqa
                     traceback.print_exc()
                 except KeyError as e:  # noqa

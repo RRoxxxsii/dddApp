@@ -8,7 +8,15 @@ class ActionTypeEnum(str, Enum):
     USER_DELETED = "user_deleted"
     USER_LOGGED_IN = "user_logged_in"
 
+    ORDER_CREATED = "order_created"
+    ORDER_MODIFIED = "order_modified"
+
 
 ActionType = Literal[
-    "user_created", "user_modified", "user_deleted", "user_logged_in"
+    "user_created",
+    "user_modified",
+    "user_deleted",
+    "user_logged_in",
+    "order_created",
+    "order_modified",
 ]

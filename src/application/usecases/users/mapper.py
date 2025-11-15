@@ -1,4 +1,4 @@
-from src.application.users.dto import UserDTO
+from src.application.usecases.users.dto import UserDTO
 from src.domain.users.entities import User
 
 

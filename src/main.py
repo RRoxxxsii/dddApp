@@ -13,8 +13,9 @@ from src.infrastructure.sqlalchemy.main import (
 )
 from src.presentation.api.analytics.router import router as analytics_router
 from src.presentation.api.exception_handlers import setup_exception_handlers
+from src.presentation.api.orders.router import router as orders_router
 from src.presentation.api.users.router import router as users_router
-from src.presentation.di import get_event_bus, get_uow
+from src.presentation.di import get_db_session, get_event_bus
 from src.presentation.providers import DBProvider
 
 
@@ -36,7 +37,9 @@ async def lifespan(app: FastAPI):
     await producer.start()
 
     app.dependency_overrides[get_event_bus] = lambda: event_bus  # noqa
-    app.dependency_overrides[get_uow] = db_provider.provide_client  # noqa
+    app.dependency_overrides[
+        get_db_session
+    ] = db_provider.provide_client  # noqa
 
     yield
 
@@ -56,6 +59,9 @@ def build_routers(app: FastAPI):
     v1_router.include_router(users_router, prefix="/api/users", tags=["Users"])
     v1_router.include_router(
         analytics_router, prefix="/api/analytics", tags=["Analytics"]
+    )
+    v1_router.include_router(
+        orders_router, prefix="/api/orders", tags=["Orders"]
     )
 
     app.include_router(v1_router, prefix="")

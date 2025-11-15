@@ -1,3 +1,4 @@
+from src.domain.orders.events import OrderCreatedEvent
 from src.domain.users.events import UserRegisteredEvent
 from src.infrastructure.broker.event_bus.main import EventBus
 from src.infrastructure.broker.producer import AIOKafkaProducer
@@ -5,7 +6,11 @@ from src.infrastructure.broker.producer import AIOKafkaProducer
 
 def build_event_bus(broker: AIOKafkaProducer) -> EventBus:
     event_bus = EventBus(
-        broker=broker, mapper={UserRegisteredEvent: ("user.created", "users")}
+        broker=broker,
+        mapper={
+            UserRegisteredEvent: ("user.created", "users"),
+            OrderCreatedEvent: ("order.created", "orders"),
+        },
     )
 
     return event_bus

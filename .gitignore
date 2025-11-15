@@ -186,3 +186,5 @@ fabric.properties
 # .idea
 
 backups/
+avro_schemas/
+insert.sql

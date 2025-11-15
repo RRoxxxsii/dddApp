@@ -1,9 +1,10 @@
-from src.application.users.dto import UserDTO
-from src.application.users.mapper import UserMapper
+from src.application.ports.event_bus import ABCEventBus
+from src.application.ports.repositories import RepositoryHandler
+from src.application.usecases.users.dto import UserDTO
+from src.application.usecases.users.mapper import UserMapper
 from src.domain.exceptions import AlreadyExistsException
 from src.domain.usecase import BaseUseCase
 from src.domain.users.entities import User
-from src.infrastructure.broker.event_bus.main import ABCEventBus
 from src.infrastructure.sqlalchemy.exceptions import (
     RepositoryAlreadyExistsException,
 )
@@ -12,10 +13,16 @@ from src.presentation.api.users.schema import CreateUser
 
 
 class CreateUserUseCase(BaseUseCase):
-    def __init__(self, uow: UnitOfWork, event_bus: ABCEventBus) -> None:
-        super().__init__(uow=uow)
+    def __init__(
+        self,
+        uow: UnitOfWork,
+        event_bus: ABCEventBus,
+        repository_handler: RepositoryHandler,
+    ) -> None:
+        super().__init__(uow=uow, repository_handler=repository_handler)
         self._event_bus = event_bus
         self._mapper = UserMapper
+        self._repository_handler = repository_handler
 
     async def __call__(self, dto: CreateUser) -> UserDTO:
         user = User.create(
@@ -26,7 +33,7 @@ class CreateUserUseCase(BaseUseCase):
         )
 
         try:
-            await self._uow.user_repository.create(user)
+            await self._repository_handler.user_repo.create(user)
         except RepositoryAlreadyExistsException:
             await self._uow.rollback()
             raise AlreadyExistsException(
@@ -43,9 +50,20 @@ class CreateUserUseCase(BaseUseCase):
 
 
 class UserInteractor:
-    def __init__(self, uow: UnitOfWork, event_bus: ABCEventBus) -> None:
+    def __init__(
+        self,
+        uow: UnitOfWork,
+        event_bus: ABCEventBus,
+        repository_handler: RepositoryHandler,
+    ) -> None:
         self._uow = uow
         self._event_bus = event_bus
+        self._repository_handler = repository_handler
 
-    async def create_user(self, dto: CreateUser) -> UserDTO:
-        return await CreateUserUseCase(self._uow, self._event_bus)(dto)
+    async def create_user(
+        self,
+        dto: CreateUser,
+    ) -> UserDTO:
+        return await CreateUserUseCase(
+            self._uow, self._event_bus, self._repository_handler
+        )(dto)

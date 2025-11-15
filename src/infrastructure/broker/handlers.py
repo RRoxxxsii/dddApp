@@ -1,13 +1,20 @@
 import traceback
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from typing import Any
 
-from src.application.analytics.usecases import CreateUserActionAnalyticUseCase
-from src.application.notifications.usecases import SendGreetingEmailUseCase
+from src.application.ports.mailing import ABCNotificationClient
+from src.application.usecases.analytics.usecases import (
+    CreateUserActionAnalyticUseCase,
+)
+from src.application.usecases.notifications.usecases import (
+    SendGreetingEmailUseCase,
+    SendOrderCreatedNotificationUseCase,
+)
 from src.domain.usecase import BaseUseCase
 from src.infrastructure.broker.dto_factory import ABCDTOFactory
-from src.infrastructure.mailing.client import ABCNotificationClient
 from src.infrastructure.sqlalchemy.uow import UnitOfWork
+from src.presentation.services import build_repository_handler
 
 
 class ABCHandler(ABC):
@@ -34,17 +41,32 @@ class UseCaseFactory:
         self._notification_client = notification_client
 
     def create_send_greeting_email(
-        self, uow: UnitOfWork
+        self, db_session: Any
     ) -> SendGreetingEmailUseCase:
-        return SendGreetingEmailUseCase(uow, self._notification_client)
+        return SendGreetingEmailUseCase(
+            UnitOfWork(db_session),
+            self._notification_client,
+            build_repository_handler(db_session),
+        )
+
+    def create_send_order_created_email(
+        self, db_session: Any
+    ) -> SendOrderCreatedNotificationUseCase:
+        return SendOrderCreatedNotificationUseCase(
+            UnitOfWork(db_session),
+            self._notification_client,
+            build_repository_handler(db_session),
+        )
 
     def create_user_analytics(
-        self, uow: UnitOfWork
+        self, db_session: Any
     ) -> CreateUserActionAnalyticUseCase:
-        return CreateUserActionAnalyticUseCase(uow)
+        return CreateUserActionAnalyticUseCase(
+            UnitOfWork(db_session), build_repository_handler(db_session)
+        )
 
 
-class UserCreatedMultiHandler(ABCHandler):
+class EventMultiHandler(ABCHandler):
     def __init__(
         self,
         use_case_factories: list[Callable[[UnitOfWork], BaseUseCase]],

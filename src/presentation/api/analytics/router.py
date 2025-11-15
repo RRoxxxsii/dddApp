@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
 from starlette import status
 
-from src.application.analytics.usecases import UserActionAnalyticInteractor
+from src.application.usecases.analytics.usecases import (
+    UserActionAnalyticInteractor,
+)
 from src.presentation.api.response import (
     UnifiedResponse,
     create_success_response,

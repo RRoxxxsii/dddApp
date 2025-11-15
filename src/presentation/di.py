@@ -2,5 +2,5 @@ def get_event_bus():
     pass
 
 
-def get_uow():
+def get_db_session():
     pass

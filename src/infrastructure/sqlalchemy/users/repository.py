@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.ports.repositories import ABCUserRepository
 from src.domain.users.entities import User
 from src.domain.users.valueobjects import UserId
 from src.infrastructure.sqlalchemy.exceptions import (
@@ -9,7 +10,7 @@ from src.infrastructure.sqlalchemy.exceptions import (
 from src.infrastructure.sqlalchemy.users.model import UserORM
 
 
-class UserRepository:
+class UserRepository(ABCUserRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

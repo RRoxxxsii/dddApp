@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from starlette import status
 
-from src.application.users.dto import UserDTO
-from src.application.users.usecases import UserInteractor
+from src.application.usecases.users.dto import UserDTO
+from src.application.usecases.users.usecases import UserInteractor
 from src.presentation.api.response import (
     UnifiedResponse,
     create_success_response,
