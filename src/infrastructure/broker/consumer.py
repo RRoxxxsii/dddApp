@@ -4,7 +4,7 @@ import traceback
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from aiokafka import AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer, ConsumerRecord
 
 from src.infrastructure.broker.handlers import ABCHandler
 
@@ -43,7 +43,7 @@ class KafkaMessageConsumer(MessageConsumer):
             auto_offset_reset=self.config.auto_offset_reset,
             enable_auto_commit=self.config.enable_auto_commit,
             session_timeout_ms=self.config.session_timeout_ms,
-            max_poll_interval_ms=self.config.max_poll_interval_ms
+            max_poll_interval_ms=self.config.max_poll_interval_ms,
         )
 
         await self.consumer.start()
@@ -74,3 +74,71 @@ class KafkaMessageConsumer(MessageConsumer):
     async def stop(self) -> None:
         if self.consumer:
             await self.consumer.stop()
+
+
+class ModularKafkaConsumer:
+    def __init__(
+        self,
+        name: str,
+        config: KafkaConfig,
+        topic_handlers: dict[str, ABCHandler],
+    ):
+        self.name = name
+        self.config = config
+        self.topic_handlers = topic_handlers
+        self.consumer: AIOKafkaConsumer | None = None
+        self._running = False
+
+    async def start(self) -> None:
+        """Запуск конкретного консьюмера"""
+        self.consumer = AIOKafkaConsumer(
+            *self.topic_handlers.keys(),
+            bootstrap_servers=self.config.bootstrap_servers,
+            group_id=self.config.group_id,
+            auto_offset_reset=self.config.auto_offset_reset,
+            enable_auto_commit=self.config.enable_auto_commit,
+            session_timeout_ms=self.config.session_timeout_ms,
+            max_poll_interval_ms=self.config.max_poll_interval_ms,
+        )
+
+        await self.consumer.start()
+        self._running = True
+
+    async def consume(self) -> None:
+        """Основной цикл обработки сообщений"""
+        if not self.consumer:
+            await self.start()
+
+        try:
+            async for message in self.consumer:
+                try:
+                    await self._process_message(message)
+                except Exception as e:
+                    print(f"Error in consumer '{self.name}': {e}")
+                    traceback.print_exc()
+
+        except asyncio.CancelledError:
+            print(f"Consumer '{self.name}' was cancelled")
+        except Exception as e:
+            print(f"Consumer '{self.name}' crashed: {e}")
+            traceback.print_exc()
+        finally:
+            await self.stop()
+
+    async def _process_message(self, message: ConsumerRecord) -> None:
+        """Обработка одного сообщения"""
+        handler: ABCHandler = self.topic_handlers[message.topic]
+        data = json.loads(message.value.decode("utf-8"))
+
+        if asyncio.iscoroutinefunction(handler.handle):
+            await handler.handle(raw_message=data)  # noqa
+        else:
+            handler.handle(raw_message=data)  # type: ignore
+
+        await self.consumer.commit()
+
+    async def stop(self) -> None:
+        """Остановка консьюмера"""
+        if self.consumer:
+            await self.consumer.stop()
+            self._running = False

@@ -4,8 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 
 from src.config import get_settings
+from src.infrastructure.broker.consumer import ModularKafkaConsumer
 from src.infrastructure.broker.event_bus.config import build_event_bus
-from src.infrastructure.broker.main import setup_kafka_analytics_consumer
+from src.infrastructure.broker.main import setup_kafka_consumers
 from src.infrastructure.broker.producer import AIOKafkaProducer
 from src.infrastructure.sqlalchemy.main import (
     create_async_engine,
@@ -27,31 +28,35 @@ async def lifespan(app: FastAPI):
 
     engine = create_async_engine(config=settings)
     pool = create_async_pool(engine=engine)
-
     db_provider = DBProvider(pool)
 
-    consumer, topic_handlers = setup_kafka_analytics_consumer(db_provider)
+    consumer_configs = setup_kafka_consumers(db_provider)
 
-    consumer_task = asyncio.create_task(consumer.consume(topic_handlers))
+    consumer_tasks = []
+    for consumer, topic_handlers in consumer_configs:
+        modular_consumer = ModularKafkaConsumer(
+            name=consumer.config.group_id,
+            config=consumer.config,
+            topic_handlers=topic_handlers,
+        )
+        task = asyncio.create_task(modular_consumer.consume())
+        consumer_tasks.append(task)
 
     await producer.start()
 
-    app.dependency_overrides[get_event_bus] = lambda: event_bus  # noqa
-    app.dependency_overrides[
-        get_db_session
-    ] = db_provider.provide_client  # noqa
+    app.dependency_overrides[get_event_bus] = lambda: event_bus
+    app.dependency_overrides[get_db_session] = db_provider.provide_client
 
     yield
 
-    consumer_task.cancel()
-    try:
-        await consumer_task
-    except asyncio.CancelledError:
-        pass
+    for task in consumer_tasks:
+        task.cancel()
+
+    if consumer_tasks:
+        await asyncio.gather(*consumer_tasks, return_exceptions=True)
 
     await producer.stop()
     await engine.dispose()
-    await consumer.stop()
 
 
 def build_routers(app: FastAPI):
