@@ -2,6 +2,7 @@ from src.application.ports.event_bus import ABCEventBus
 from src.application.ports.repositories import RepositoryHandler
 from src.application.usecases.orders.dto import OrderDTO
 from src.application.usecases.orders.mapper import OrderMapper
+from src.domain.exceptions import NotFoundException
 from src.domain.orders.aggregates import Order
 from src.domain.orders.entities import OrderItem
 from src.domain.orders.valueobjects import OrderId
@@ -26,6 +27,8 @@ class CreateOrderUseCase(BaseUseCase):
         products = await self._repository_handler.warehouse_repo.get_many(
             ids=[product.product_id for product in dto.products]
         )
+        if len(products) == 0:
+            raise NotFoundException(message="Products with ids do not exist.")
 
         product_to_quantity = {
             product.product_id: product.quantity for product in dto.products
@@ -47,13 +50,11 @@ class CreateOrderUseCase(BaseUseCase):
             user_id=dto.user_id,
             email=dto.email,
         )
-        events = order.clear_domain_events()
 
         await self._repository_handler.order_repo.create(order)
         await self._uow.commit()
 
-        await self._event_bus.publish_many(events)
-
+        order.clear_domain_events()
         return self._mapper.map_order(order)
 
 

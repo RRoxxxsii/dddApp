@@ -1,8 +1,12 @@
 import datetime
+import uuid
 from typing import Annotated
+from uuid import UUID
 
-from sqlalchemy import BigInteger, DateTime, func
-from sqlalchemy.orm import DeclarativeBase, mapped_column
+from sqlalchemy import JSON
+from sqlalchemy import UUID as SA_UUID
+from sqlalchemy import BigInteger, Boolean, DateTime, String, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -30,3 +34,20 @@ time_created = Annotated[
         server_default=func.timezone("Europe/Moscow", func.now()),
     ),
 ]
+
+
+class OutboxMessageORM(Base):
+    __tablename__ = "outbox_messages"
+
+    id: Mapped[UUID] = mapped_column(
+        SA_UUID(as_uuid=True), default=uuid.uuid4, primary_key=True
+    )
+
+    aggregate_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    aggregate_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    is_processed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    created_at: Mapped[time_created]

@@ -7,6 +7,7 @@ from src.config import get_settings
 from src.infrastructure.broker.consumer import ModularKafkaConsumer
 from src.infrastructure.broker.event_bus.config import build_event_bus
 from src.infrastructure.broker.main import setup_kafka_consumers
+from src.infrastructure.broker.outbox_processor import OutboxProcessor
 from src.infrastructure.broker.producer import AIOKafkaProducer
 from src.infrastructure.sqlalchemy.main import (
     create_async_engine,
@@ -30,6 +31,10 @@ async def lifespan(app: FastAPI):
     pool = create_async_pool(engine=engine)
     db_provider = DBProvider(pool)
 
+    outbox_processor = OutboxProcessor(
+        db_provider.provide_client, producer=producer
+    )
+
     consumer_configs = setup_kafka_consumers(db_provider)
 
     consumer_tasks = []
@@ -42,6 +47,8 @@ async def lifespan(app: FastAPI):
         task = asyncio.create_task(modular_consumer.consume())
         consumer_tasks.append(task)
 
+    outbox_task = asyncio.create_task(outbox_processor.start_processing())
+
     await producer.start()
 
     app.dependency_overrides[get_event_bus] = lambda: event_bus
@@ -51,6 +58,8 @@ async def lifespan(app: FastAPI):
 
     for task in consumer_tasks:
         task.cancel()
+
+    outbox_task.cancel()
 
     if consumer_tasks:
         await asyncio.gather(*consumer_tasks, return_exceptions=True)

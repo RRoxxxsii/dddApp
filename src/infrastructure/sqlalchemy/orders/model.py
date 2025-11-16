@@ -18,7 +18,6 @@ class OrderItemORM(Base):
         ForeignKey("orders.id"),
         nullable=False,
     )
-    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     product_id: Mapped[int] = mapped_column(
         BigInteger,
@@ -38,6 +37,7 @@ class OrderORM(Base):
         DECIMAL,
         nullable=False,
     )
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     description: Mapped[String] = mapped_column(
         String,
         nullable=False,
